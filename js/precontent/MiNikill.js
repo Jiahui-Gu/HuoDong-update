@@ -45771,14 +45771,14 @@ const packs = function () {
                 },
                 forced: true,
                 direct: true,
-                getTargetHp(player, from, to) {
+                getTargetHp(player, from, to, keepCurrentHp = false) {
                     const baseMaxHp = {
                         Mqing_lvdiao: 4,
                         Mqing_lvbu: 5,
                         Mqing_diaochan: 3,
                     };
                     const maxHp = player.maxHp - baseMaxHp[from] + baseMaxHp[to];
-                    return [maxHp, maxHp];
+                    return [keepCurrentHp ? Math.min(player.hp, maxHp) : maxHp, maxHp];
                 },
                 async content(event, trigger, player) {
                     const result = await player.chooseButton(true).set('createDialog', ['情缠：请选择你的登场形态', [['Mqing_diaochan', 'Mqing_lvbu'], 'character']]).set('ai', button => {
@@ -45811,7 +45811,7 @@ const packs = function () {
                         forced: true,
                         async content(event, trigger, player) {
                             const from = get.character(player.name2, 3).includes('miniqingchan') ? player.name2 : player.name1;
-                            player.reinit(from, 'Mqing_lvdiao', get.info('miniqingchan').getTargetHp(player, from, 'Mqing_lvdiao'));
+                            player.reinit(from, 'Mqing_lvdiao', get.info('miniqingchan').getTargetHp(player, from, 'Mqing_lvdiao', true));
                         },
                     },
                 },
@@ -45836,7 +45836,7 @@ const packs = function () {
                             const sourcex = player === current ? target : player;
                             const result = await current.chooseToUse(function (card, player, event) {
                                 if (get.name(card) !== 'sha') return false;
-                                return lib.filter.filterCard.apply(this, arguments);
+                                return lib.filter.cardEnabled.apply(this, arguments);
                             }, '情战：对' + get.translation(sourcex) + '使用一张【杀】，或失去1点体力').set('filterTarget', function (card, player, target) {
                                 const source = get.event().sourcex;
                                 if (target !== source && !ui.selected.targets.includes(source)) return false;
@@ -48595,7 +48595,7 @@ const packs = function () {
             miniqingzhan: '情战',
             miniqingzhan_info: '出牌阶段限一次，你可以选择一名其他角色A，你与其轮流选择一项：1.对对方使用一张无距离和次数限制的【杀】；2.失去1点体力。若A为你的“情敌”，则重复此流程直到你与其中的一名角色进入濒死。',
             miniqingyuan: '情援',
-            miniqingyuan_info: '锁定技。①当你对一名角色造成伤害后或成为一名角色使用的伤害牌的目标后，你摸一张牌，若该角色为你的“情敌”，则你随机弃置其一张手牌。②每轮开始时，你可以选择一名没有〖情援〗的非“情敌”角色，直到本轮结束，你失去〖情援①〗，其获得〖情援①〗。',
+            miniqingyuan_info: '锁定技。①当你对一名角色造成伤害时或成为一名角色使用的伤害牌的目标时，你摸一张牌，若该角色为你的“情敌”，则你随机弃置其一张手牌。②每轮开始时，你可以选择一名没有〖情援〗的非“情敌”角色，直到本轮结束，你失去〖情援①〗，其获得〖情援①〗。',
 
             // ----------------------- 台词部分 ----------------------- //
             '#ext:活动武将/audio/skill/minidoumao1': '喵～呜～',
