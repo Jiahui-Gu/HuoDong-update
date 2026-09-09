@@ -153,7 +153,7 @@ const packs = function () {
             Mbaby_caoyi: ['female', 'wei', 4, ['minimiyi', 'dcyinjun']],
             Mbaby_dc_sb_xunyu: ['male', 'wei', 3, ['dcsbbizuo', 'minishimou'], ['clan:颍川荀氏']],
             Mbaby_sb_xiahoudun: ['male', 'wei', 4, ['miniganglie', 'minisbqingjian'], ['name:夏侯|惇']],
-            Mbaby_yj_majun: ['male', 'wei', 3, ['gongqiao', 'minijingyi']],
+            Mbaby_yj_majun: ['male', 'wei', 3, ['minigongqiao', 'minijingyi']],
             Mbaby_re_caochong: ['male', 'wei', 3, ['minirechengxiang', 'minirenxin']],
             Mbaby_zhanghu: ['male', 'wei', 4, ['cuijian', 'minitongyuan']],
             //蜀
@@ -8158,27 +8158,68 @@ const packs = function () {
                 },
             },
             //马钧
+            minigongqiao: {
+                audio: 'gongqiao',
+                inherit: 'gongqiao',
+                getAiScore(card, player) {
+                    const type = get.type(card, null, player);
+                    const hasType = player.getCards('e').some(equip => {
+                        const physicalCard = equip.cards?.[0] ?? equip;
+                        return get.type(physicalCard, null, player) === type;
+                    });
+                    let score = 7 - get.value(card, player);
+                    if (!hasType) {
+                        if (type === 'basic') score += 4;
+                        else if (type === 'trick') score += 3;
+                        else if (type === 'equip') score += 2;
+                    }
+                    const name = get.name(card, player);
+                    if (player.hp <= 2 && name === 'tao') score -= 8;
+                    else if (player.hp <= 2 && name === 'shan' && player.countCards('h', 'shan') <= 1) score -= 5;
+                    return score;
+                },
+                check(card) {
+                    return lib.skill.minigongqiao.getAiScore(card, get.player());
+                },
+                ai: {
+                    order: 9,
+                    result: {
+                        player(player) {
+                            const cards = player.getCards('h');
+                            if (!cards.length) return 0;
+                            return cards.some(card => lib.skill.minigongqiao.getAiScore(card, player) > 0) ? 1 : 0;
+                        },
+                    },
+                },
+            },
             minijingyi: {
                 audio: 'jingyi',
                 trigger: { player: 'equipAfter' },
                 forced: true,
                 filter(event, player, name, card) {
                     const subtypes = get.subtypes(card);
-                    return !player.getStorage('minijingyi_used').some(subtype => subtypes.includes(subtype));
+                    return subtypes.length > 0 && subtypes.some(subtype => !player.getStorage('minijingyi_used').includes(subtype));
                 },
                 getIndex(event, player) {
-                    return event.cards ?? [];
+                    const used = player.getStorage('minijingyi_used').slice();
+                    return (event.cards ?? []).filter(card => {
+                        const subtypes = get.subtypes(card);
+                        if (!subtypes.length || subtypes.every(subtype => used.includes(subtype))) return false;
+                        used.addArray(subtypes);
+                        return true;
+                    });
                 },
                 async content(event, trigger, player) {
                     const card = event.indexedData, subtypes = get.subtypes(card);
                     player.addTempSkill(event.name + '_used');
                     if (subtypes?.length) player.markAuto(event.name + '_used', subtypes);
                     const num = player.getCards('e').reduce((sum, card) => {
-                        const num2 = card.viewAs ? card.cards.length : 1;
-                        return sum + num2;
+                        return sum + Math.max(1, card.cards?.length ?? 0);
                     }, 1);
                     await player.draw(num);
-                    if (player.countCards('he') > 0) await player.chooseToDiscard('he', true);
+                    if (player.countCards('he') > 0) {
+                        await player.chooseToDiscard('he', true).set('ai', card => 7 - get.value(card, get.player()));
+                    }
                 },
                 subSkill: { used: { charlotte: true, onremove: true } },
             },
@@ -46620,6 +46661,8 @@ const packs = function () {
             miniganglie_info: '出牌阶段限一次，你可以选择任意名本局游戏中对你造成过伤害的角色，对其造成2点伤害，然后该角色视为未对你造成伤害。',
             minisbqingjian: '清俭',
             minisbqingjian_info: '锁定技。当一张牌非因使用而进入弃牌堆时，若你的“清俭”牌不足X张（X为你的体力值），你将之置于你的武将牌上，称为“清俭”牌；结束阶段，你将这些牌分配给任意角色。',
+            minigongqiao: '工巧',
+            minigongqiao_info: '出牌阶段限一次，你可以将一张手牌置于你的任意装备栏（替换原装备）；若你的装备区内有：①基本牌，你使用基本牌的数值+1；②锦囊牌，你每回合首次使用一种类型的牌后摸一张牌；③装备牌，手牌上限+3。',
             minijingyi: '精益',
             minijingyi_info: '锁定技。每回合每个副类别限一次，当有实体牌进入你的装备区后，你摸X张牌，然后弃置一张牌（X为你装备区内实体牌的数量+1）。',
             minirechengxiang: '称象',
