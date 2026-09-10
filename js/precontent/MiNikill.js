@@ -8177,7 +8177,7 @@ const packs = function () {
                 },
                 getIndex(event, player) {
                     const used = player.getStorage('minijingyi_used').slice();
-                    return (event.cards ?? []).filter(card => {
+                    return (event.vcards?.length ? event.vcards : event.cards ?? []).filter(card => {
                         const subtypes = get.subtypes(card);
                         if (!subtypes.length || subtypes.every(subtype => used.includes(subtype))) return false;
                         used.addArray(subtypes);
