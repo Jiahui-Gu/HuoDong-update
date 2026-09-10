@@ -49330,6 +49330,11 @@ const packs = function () {
         const gongqiao = lib.skill.gongqiao;
         if (gongqiao?.chooseButton?.check && !gongqiao.chooseButton.miniMaJunAi) {
             const originalCheck = gongqiao.chooseButton.check;
+            const originalOrder = gongqiao.ai.order;
+            gongqiao.ai.order = function (item, player) {
+                if (player && get.nameList(player).includes('Mbaby_yj_majun')) return 20;
+                return typeof originalOrder === 'function' ? originalOrder.apply(this, arguments) : originalOrder;
+            };
             gongqiao.chooseButton.check = function () {
                 const player = get.player();
                 if (!get.nameList(player).includes('Mbaby_yj_majun')) {
