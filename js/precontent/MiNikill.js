@@ -8160,6 +8160,15 @@ const packs = function () {
             //马钧
             minijingyi: {
                 audio: 'jingyi',
+                mod: {
+                    aiOrder(player, card, num) {
+                        if (num <= 0 || get.itemtype(card) !== 'card' || get.type(card) !== 'equip') return num;
+                        const used = player.getStorage('minijingyi_used');
+                        if (get.subtypes(card).some(subtype => !used.includes(subtype))) {
+                            return Math.max(num, 21);
+                        }
+                    },
+                },
                 trigger: { player: 'equipAfter' },
                 forced: true,
                 filter(event, player, name, card) {
@@ -8186,6 +8195,16 @@ const packs = function () {
                     if (player.countCards('he') > 0) {
                         await player.chooseToDiscard('he', true).set('ai', card => 7 - get.value(card, get.player()));
                     }
+                },
+                ai: {
+                    effect: {
+                        target(card, player, target) {
+                            if (target === player && get.type(card) === 'equip') {
+                                const used = player.getStorage('minijingyi_used');
+                                if (get.subtypes(card).some(subtype => !used.includes(subtype))) return [1, 3];
+                            }
+                        },
+                    },
                 },
                 subSkill: { used: { charlotte: true, onremove: true } },
             },
@@ -49340,16 +49359,19 @@ const packs = function () {
                 if (!get.nameList(player).includes('Mbaby_yj_majun')) {
                     return originalCheck.apply(this, arguments);
                 }
-                const emptySlot = [5, 3, 4, 1, 2, 0].find(index => player.hasEmptySlot(index));
-                if (emptySlot !== undefined) return `equip${emptySlot}`;
                 const slots = Array.from({ length: 6 }, (_, index) => index).filter(index => player.hasEquipableSlot(index));
                 if (!slots.length) return 'cancel2';
+                const used = player.getStorage('minijingyi_used');
                 const replacementValue = index => {
                     const vcard = player.getVEquips(index)[0];
                     if (!vcard) return 0;
                     return get.value(vcard.cards?.[0] ?? vcard, player);
                 };
-                const slot = slots.sort((a, b) => replacementValue(a) - replacementValue(b))[0];
+                const slot = slots.sort((a, b) => {
+                    const aUsed = used.includes(`equip${a}`), bUsed = used.includes(`equip${b}`);
+                    if (aUsed !== bUsed) return aUsed - bUsed;
+                    return replacementValue(a) - replacementValue(b);
+                })[0];
                 return `equip${slot}`;
             };
             gongqiao.chooseButton.miniMaJunAi = true;
